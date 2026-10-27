@@ -1,0 +1,57 @@
+resources:
+  jobs:
+    Tourism_ESG_Orchestrator_jbolanos:
+      name: Tourism_ESG_Orchestrator_jbolanos_${bundle.target}
+      email_notifications:
+        on_success:
+          - jose.bolanos30@ulatina.net
+        on_failure:
+          - jose.bolanos30@ulatina.net
+      parameters:
+        - name: min_rows
+          default: "0"
+        - name: catalog
+          default: ${var.catalog}
+        - name: schema
+          default: ${var.schema}
+      tasks:
+        - task_key: T_ESG_DP_pipeline
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.pipeline_tourism_esg_dp_jbolanos.id}
+        - task_key: Gold_validation
+          depends_on:
+            - task_key: T_ESG_DP_pipeline
+          notebook_task:
+            notebook_path: ../src/Tourism_ESG_gold_validation.py
+            base_parameters:
+              min_rows: "{{job.parameters.min_rows}}"
+              catalog: "{{job.parameters.catalog}}"
+              schema: "{{job.parameters.schema}}"
+            source: WORKSPACE
+        - task_key: Gold_row_condition
+          depends_on:
+            - task_key: Gold_validation
+          condition_task:
+            op: GREATER_THAN
+            left: "{{tasks.Gold_validation.values.row_validation}}"
+            right: "{{job.parameters.min_rows}}"
+        - task_key: T_esg_dashboard
+          depends_on:
+            - task_key: Gold_row_condition
+              outcome: "true"
+          dashboard_task:
+            warehouse_id: c9ef2b8e833a15d5
+            dashboard_id: 01f1d1bb88641c088fdf2334785abfef
+        - task_key: Gold_validation_failed
+          depends_on:
+            - task_key: Gold_row_condition
+              outcome: "false"
+          notebook_task:
+            notebook_path: ../src/Gold_validation_failed.py
+            base_parameters:
+              row_validation: "{{tasks.Gold_validation.values.row_validation}}"
+              min_rows: "{{job.parameters.min_rows}}"
+            source: WORKSPACE
+      queue:
+        enabled: true
+      performance_target: PERFORMANCE_OPTIMIZED

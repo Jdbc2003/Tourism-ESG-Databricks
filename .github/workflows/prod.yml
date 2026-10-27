@@ -1,0 +1,61 @@
+name: Deploy to prod
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+concurrency: prod-${{ github.ref }}
+
+jobs:
+  validate:
+    name: "Validate bundle"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: databricks/setup-cli@main
+      - run: databricks bundle validate
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_CLIENT_ID: ${{ secrets.DATABRICKS_CLIENT_ID }}
+          DATABRICKS_CLIENT_SECRET: ${{ secrets.DATABRICKS_CLIENT_SECRET }}
+          DATABRICKS_BUNDLE_ENV: production
+          DATABRICKS_AUTH_TYPE: oauth-m2m
+
+  deploy:
+    name: "Deploy bundle"
+    if: github.event_name == 'push'
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: databricks/setup-cli@main
+      - run: databricks bundle deploy
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_CLIENT_ID: ${{ secrets.DATABRICKS_CLIENT_ID }}
+          DATABRICKS_CLIENT_SECRET: ${{ secrets.DATABRICKS_CLIENT_SECRET }}
+          DATABRICKS_BUNDLE_ENV: production
+          DATABRICKS_AUTH_TYPE: oauth-m2m
+
+  run_pipeline_job:
+    name: "Run pipeline job"
+    if: github.event_name == 'push'
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: databricks/setup-cli@main
+      - shell: bash
+        name: Run ESG pipeline job
+        run: |
+          databricks bundle run Tourism_ESG_Orchestrator_jbolanos -t production
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_CLIENT_ID: ${{ secrets.DATABRICKS_CLIENT_ID }}
+          DATABRICKS_CLIENT_SECRET: ${{ secrets.DATABRICKS_CLIENT_SECRET }}
+          DATABRICKS_BUNDLE_ENV: production
+          DATABRICKS_AUTH_TYPE: oauth-m2m

@@ -1,0 +1,30 @@
+resources:
+  pipelines:
+    pipeline_tourism_esg_dp_jbolanos:
+      name: Tourism-ESG-dp-jbolanos
+      catalog: ${var.catalog}
+      schema: ${var.schema}
+      configuration:
+        catalog: ${var.catalog}
+        schema: ${var.schema}
+        student_name: ${var.student_name}
+      libraries:
+        - file:
+            path: ../src/pipeline/trips_bronze_jbolanos.py
+        - file:
+            path: ../src/pipeline/trips_silver_jbolanos.py
+        - file:
+            path: ../src/pipeline/transport_cdc_bronze_jbolanos.py
+        - file:
+            path: ../src/pipeline/transport_cdc_silver_jbolanos.py
+        - file:
+            path: ../src/pipeline/tourism_esg_gold_jbolanos.py
+      continuous: false
+      photon: true
+      channel: CURRENT
+      serverless: true
+      event_log:
+        name: event_log_tourism_esg_dp_jbolanos
+        catalog: ${var.catalog}
+        schema: ${var.schema}
+      root_path: /Workspace/Users/jdbc3002@gmail.com/Tourism_ESG_project_jbolanos/Tourism-ESG-dp-jbolanos
