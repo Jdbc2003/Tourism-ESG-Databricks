@@ -1,0 +1,36 @@
+bundle:
+  name: bundle_tourism_esg
+
+include:
+  - resources/*.yml
+
+variables:
+  catalog:
+    description: Catálogo destino
+    default: tourism-esg
+  schema:
+    description: Esquema destino dentro del catálogo
+    default: tourism-esg-dev
+  student_name:
+    description: Nombre del estudiante
+    default: jbolanos
+
+targets:
+  development:
+    mode: development        
+    default: true
+    workspace:
+      root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target}
+    variables:
+      catalog: tourism-esg
+      schema: tourism-esg-dev
+      student_name: jbolanos
+
+  production:
+    mode: production
+    workspace:
+      root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target}
+    variables:
+      catalog: tourism-esg
+      schema: tourism-esg-prod
+      student_name: jbolanos
