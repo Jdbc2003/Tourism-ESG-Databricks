@@ -24,7 +24,7 @@ resources:
       channel: CURRENT
       serverless: true
       event_log:
-        name: event_log_tourism_esg_dp_jbolanos
-        catalog: ${var.catalog}
+        name: event_log_tourism_esg_cicd_${bundle.target}_jbolanos
         schema: ${var.schema}
+        catalog: ${var.catalog}
       root_path: /Workspace/Users/jdbc3002@gmail.com/Tourism_ESG_project_jbolanos/Tourism-ESG-dp-jbolanos
