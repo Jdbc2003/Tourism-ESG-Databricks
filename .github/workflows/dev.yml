@@ -50,7 +50,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: databricks/setup-cli@main
       - shell: bash
-        name: name: Run ESG pipeline job
+        name: Run ESG pipeline job
         run: |
           databricks bundle run Tourism_ESG_Orchestrator_jbolanos -t development
         env:
