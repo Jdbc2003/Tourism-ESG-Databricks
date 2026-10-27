@@ -11,7 +11,31 @@ name = spark.conf.get("student_name")
 @dp.expect("negative_emissions", "carbon_footprint_kg_co2 > 0")
 @dp.expect_or_drop("valid_num_travelers", "num_travelers IS NOT NULL")
 
-#justificacion constraints
+# =============================================================================
+# JUSTIFICACIÓN DE EXPECTATIONS (calidad de datos)
+# -----------------------------------------------------------------------------
+# 1. no_missing_trip_id — comportamiento: DROP (expect_or_drop)
+#    Regla: trip_id IS NOT NULL
+#    Justificación: trip_id es la llave primaria del hecho. Un registro sin
+#    trip_id no puede unirse con dimensiones ni agregarse de forma confiable.
+#    Se descarta la fila porque un dato sin identificador no aporta valor
+#    analítico y contaminaría las métricas de gold.
+#
+# 2. negative_emissions — comportamiento: WARN (expect)
+#    Regla: carbon_footprint_kg_co2 > 0
+#    Justificación: las emisiones deberían ser positivas, pero un valor de
+#    cero o negativo podría indicar un error de captura o un caso atípico
+#    (p. ej. un viaje compensado 100%). Se deja pasar la fila y solo se advierte
+#    para no perder el registro completo, que puede tener gasto y otros
+#    atributos válidos. Permite investigar el caso sin descartar información.
+#
+# 3. valid_num_travelers — comportamiento: DROP (expect_or_drop)
+#    Regla: num_travelers IS NOT NULL
+#    Justificación: num_travelers se usa como denominador en columnas derivadas
+#    (emission_per_traveler, spend_per_traveler). Un NULL provocaría división
+#    por cero o NULL en gold. Se descarta la fila porque el cálculo de
+#    métricas por viajero no es posible sin este campo.
+# =============================================================================
 
 def tourism_esg_silver_trips():
     return (
@@ -21,12 +45,10 @@ def tourism_esg_silver_trips():
             F.col("carbon_footprint_kg_co2") / F.col("num_travelers")
         )
         .withColumn(
-            "emissions_band",
-            F.when(F.col("emission_per_traveler") >= 1000, "High emissions").otherwise("Lower emissions")
-        )
-        .withColumn(
             "spend_without_food",
             F.col("total_trip_spend_usd") - F.col("restaurant_spend_per_day_usd") * F.col("duration_nights"))
+        .withWatermark("ingest_timestamp", "1 hour")
+        .dropDuplicates(["trip_id"])
         .select(
             F.trim(F.col("trip_id")).alias("trip_id"),
             "year",
@@ -42,9 +64,8 @@ def tourism_esg_silver_trips():
             "total_trip_spend_usd",
             "spend_without_food",
             "local_transport_used",
-            "eco_friendly_choices",
-            "emissions_band"
+            "eco_friendly_choices"
             )
-        )
+    )
 
 
