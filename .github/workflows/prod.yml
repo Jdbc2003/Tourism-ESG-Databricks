@@ -50,9 +50,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: databricks/setup-cli@main
       - shell: bash
-        name: Run jobs.yml
+        name: Run ESG pipeline job
         run: |
-          databricks bundle run jobs.yml 2>&1 | tee output.log
+          databricks bundle run Tourism_ESG_Orchestrator_jbolanos -t production
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
           DATABRICKS_CLIENT_ID: ${{ secrets.DATABRICKS_CLIENT_ID }}
