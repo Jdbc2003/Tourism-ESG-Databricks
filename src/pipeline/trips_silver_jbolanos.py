@@ -21,6 +21,10 @@ def tourism_esg_silver_trips():
             F.col("carbon_footprint_kg_co2") / F.col("num_travelers")
         )
         .withColumn(
+            "emissions_band",
+            F.when(F.col("emission_per_traveler") >= 1000, "High emissions").otherwise("Lower emissions")
+        )
+        .withColumn(
             "spend_without_food",
             F.col("total_trip_spend_usd") - F.col("restaurant_spend_per_day_usd") * F.col("duration_nights"))
         .select(
@@ -38,7 +42,8 @@ def tourism_esg_silver_trips():
             "total_trip_spend_usd",
             "spend_without_food",
             "local_transport_used",
-            "eco_friendly_choices"
+            "eco_friendly_choices",
+            "emissions_band"
             )
         )
 
